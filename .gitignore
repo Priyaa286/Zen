@@ -1,0 +1,85 @@
+
+# ==============================
+# ENVIRONMENT VARIABLES & SECRETS
+# ==============================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+credentials.json
+
+# ==============================
+# PYTHON / FASTAPI BACKEND
+# ==============================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+ENV/
+env/
+build/
+dist/
+.eggs/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ==============================
+# NODE / REACT FRONTEND
+# ==============================
+node_modules/
+dist/
+build/
+.next/
+.vite/
+coverage/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# ==============================
+# IDE / EDITOR
+# ==============================
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ==============================
+# LOGS & TEMPORARY FILES
+# ==============================
+*.log
+logs/
+tmp/
+temp/
+
+# ==============================
+# DATABASE / LOCAL DATA
+# ==============================
+*.sqlite3
+*.db
+mongodb-data/
+data/
+
+# ==============================
+# TESTING
+# ==============================
+.tox/
+.nox/
+test-results/
+playwright-report/
+
+# ==============================
+# OS FILES
+# ==============================
+Desktop.ini
