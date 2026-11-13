@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" fill="none">
+  <defs>
+    <radialGradient id="studioWall" cx="50%" cy="42%" r="65%">
+      <stop offset="0%" stop-color="#F6F4ED"/>
+      <stop offset="68%" stop-color="#EEEAE0"/>
+      <stop offset="100%" stop-color="#E5E0D4"/>
+    </radialGradient>
+    <radialGradient id="contactShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#151923" stop-opacity="0.28"/>
+      <stop offset="48%" stop-color="#151923" stop-opacity="0.11"/>
+      <stop offset="100%" stop-color="#151923" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="cabinetOuter" x1="170" y1="150" x2="630" y2="445" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2B2E37"/>
+      <stop offset="50%" stop-color="#1D2027"/>
+      <stop offset="100%" stop-color="#12141A"/>
+    </linearGradient>
+    <linearGradient id="brassBar" x1="190" y1="0" x2="610" y2="0" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#9A7638"/>
+      <stop offset="32%" stop-color="#D7B46E"/>
+      <stop offset="55%" stop-color="#EBD091"/>
+      <stop offset="82%" stop-color="#C39D55"/>
+      <stop offset="100%" stop-color="#8B692E"/>
+    </linearGradient>
+    <radialGradient id="knobTop" cx="38%" cy="32%" r="65%">
+      <stop offset="0%" stop-color="#F0D89C"/>
+      <stop offset="55%" stop-color="#BC964B"/>
+      <stop offset="100%" stop-color="#765722"/>
+    </radialGradient>
+    <pattern id="fretPattern" width="8" height="8" patternUnits="userSpaceOnUse">
+      <rect width="8" height="8" fill="#181A20"/>
+      <path d="M0 4H8M4 0V8" stroke="#242730" stroke-width="1"/>
+      <circle cx="4" cy="4" r="1.2" fill="#2A2D38"/>
+    </pattern>
+  </defs>
+
+  <rect width="800" height="600" fill="url(#studioWall)"/>
+  <!-- Floor surface gradient -->
+  <rect x="0" y="420" width="800" height="180" fill="#E8E3D7" opacity="0.55"/>
+  <!-- Soft studio shadow -->
+  <ellipse cx="400" cy="458" rx="260" ry="26" fill="url(#contactShadow)"/>
+
+  <!-- Cabinet body -->
+  <rect x="172" y="156" width="456" height="292" rx="18" fill="url(#cabinetOuter)"/>
+  <!-- Specular top bevel -->
+  <rect x="174" y="156" width="452" height="3" rx="1.5" fill="#464B59" opacity="0.45"/>
+
+  <!-- Top brass control plate -->
+  <rect x="196" y="146" width="408" height="16" rx="3" fill="url(#brassBar)"/>
+  <!-- Analog rotary knobs -->
+  <circle cx="256" cy="144" r="13" fill="#151923" stroke="url(#knobTop)" stroke-width="3.5"/>
+  <line x1="256" y1="133" x2="256" y2="141" stroke="#EBD091" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="310" cy="144" r="13" fill="#151923" stroke="url(#knobTop)" stroke-width="3.5"/>
+  <line x1="316" y1="135" x2="312" y2="142" stroke="#EBD091" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="364" cy="144" r="13" fill="#151923" stroke="url(#knobTop)" stroke-width="3.5"/>
+  <line x1="358" y1="135" x2="362" y2="142" stroke="#EBD091" stroke-width="2" stroke-linecap="round"/>
+  <!-- Brass toggle switch -->
+  <rect x="520" y="138" width="22" height="11" rx="2.5" fill="url(#knobTop)"/>
+
+  <!-- Acoustic woven grille -->
+  <rect x="194" y="180" width="412" height="232" rx="8" fill="url(#fretPattern)" stroke="#313542" stroke-width="1.5"/>
+  <!-- Inner fret piping trim -->
+  <rect x="198" y="184" width="404" height="224" rx="6" stroke="#856A39" stroke-opacity="0.35" stroke-width="1.2"/>
+
+  <!-- Minimal brushed brass nameplate bar -->
+  <rect x="334" y="286" width="132" height="18" rx="2" fill="url(#brassBar)"/>
+  <rect x="342" y="294" width="116" height="2.2" rx="1.1" fill="#151923" opacity="0.55"/>
+
+  <!-- Lower brass bezel accent -->
+  <rect x="196" y="424" width="408" height="7" rx="2" fill="url(#brassBar)"/>
+
+  <!-- Rubber isolation feet -->
+  <rect x="208" y="448" width="34" height="7" rx="3" fill="#12141A"/>
+  <rect x="558" y="448" width="34" height="7" rx="3" fill="#12141A"/>
+</svg>

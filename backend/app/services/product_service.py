@@ -406,6 +406,46 @@ class ProductService:
         has_exact = len(exact_matches) > 0
         return exact_matches, alternatives, has_exact
 
+    async def _search_db_products(self, query_text: str) -> List[Dict[str, Any]]:
+        try:
+            from app.database.connection import AsyncSessionLocal
+            from app.database.models import ProductORM
+            from sqlalchemy import select
+            if AsyncSessionLocal is None:
+                return []
+            async with AsyncSessionLocal() as session:
+                res = await session.execute(select(ProductORM))
+                db_prods = res.scalars().all()
+                q_lower = query_text.lower().strip()
+                terms = q_lower.split() if q_lower else []
+                matched = []
+                for p in db_prods:
+                    hay = f"{p.title} {p.brand or ''} {p.category or ''} {p.subcategory or ''} {p.merchant_name}".lower()
+                    if not q_lower or not terms or any(t in hay for t in terms):
+                        matched.append({
+                            "id": p.id,
+                            "title": p.title,
+                            "brand": p.brand,
+                            "category": p.category,
+                            "price": p.price,
+                            "currency": p.currency,
+                            "merchant": p.merchant_name,
+                            "image_url": p.image_url,
+                            "offers": [
+                                {
+                                    "url": f"https://zen.global/products/{p.id}",
+                                    "merchant_name": p.merchant_name,
+                                    "price": p.price,
+                                    "currency": p.currency,
+                                    "availability": p.availability,
+                                }
+                            ]
+                        })
+                return matched
+        except Exception as err:
+            logger.warning("Error searching local products: %s", err)
+            return []
+
     async def search_products(
         self,
         requirements: ShoppingRequirements,
@@ -452,6 +492,7 @@ class ProductService:
                 config=config,
                 limit=limit,
             )
+            raw_products = raw_response.get("products", [])
         except (Channel3AuthError, Channel3ValidationError, Channel3RateLimitError, Channel3TimeoutError, Channel3Error) as exc:
             logger.error("Channel3 search failed: %s", exc)
             return ProductSearchResponse(
@@ -462,7 +503,8 @@ class ProductService:
                 message=str(exc),
             )
 
-        raw_products = raw_response.get("products", [])
+        if not raw_products:
+            raw_products = await self._search_db_products(query)
 
         # Enrich missing offers via documented GET /v1/products/{id}
         enriched_products = await self._enrich_product_offers(

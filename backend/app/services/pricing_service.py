@@ -251,6 +251,35 @@ class PricingService:
             )
 
         if not raw_detail:
+            # Check SQLite Database for local/seeded catalog product
+            try:
+                from app.database.connection import AsyncSessionLocal
+                from app.database.models import ProductORM
+                from sqlalchemy import select
+                if AsyncSessionLocal is not None:
+                    async with AsyncSessionLocal() as session:
+                        res = await session.execute(select(ProductORM).where(ProductORM.id == request.product_id))
+                        db_prod = res.scalar_one_or_none()
+                        if db_prod:
+                            raw_detail = {
+                                "id": db_prod.id,
+                                "title": db_prod.title,
+                                "brand": db_prod.brand,
+                                "offers": [
+                                    {
+                                        "url": f"https://zen.global/products/{db_prod.id}",
+                                        "domain": db_prod.merchant_name,
+                                        "merchant_name": db_prod.merchant_name,
+                                        "price": db_prod.price,
+                                        "currency": db_prod.currency,
+                                        "availability": db_prod.availability,
+                                    }
+                                ],
+                            }
+            except Exception as db_err:
+                logger.warning("DB fallback product lookup failed: %s", db_err)
+
+        if not raw_detail:
             raise ValueError(f"Product '{request.product_id}' not found in trusted catalog.")
 
         normalized_product = self.product_service.normalize_product(raw_detail)

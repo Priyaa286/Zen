@@ -109,14 +109,39 @@ class ShoppingAgent:
 
         return missing
 
+    def _sanitize_input(self, text: str) -> str:
+        """
+        Sanitize user prompt against prompt injection and jailbreak payloads.
+        Strips adversarial instructions while preserving legitimate product terms.
+        """
+        cleaned = text.strip()
+        # Common adversarial prompt injection attack vectors
+        injection_patterns = [
+            r"(?i)ignore\s+(all\s+|previous\s+|prior\s+)?instructions?",
+            r"(?i)system\s*prompt",
+            r"(?i)you\s+are\s+now\s+in\s+developer\s+mode",
+            r"(?i)bypass\s+(all\s+)?safety\s+filters?",
+            r"(?i)reveal\s+(secret|api_key|password|credentials)",
+            r"(?i)drop\s+table",
+            r"(?i)<script[\s\S]*?>[\s\S]*?</script>",
+        ]
+        for pattern in injection_patterns:
+            if re.search(pattern, cleaned):
+                logger.warning("Adversarial prompt injection pattern detected in shopping agent input: %s", pattern)
+                cleaned = re.sub(pattern, "[FILTERED_SECURITY_DIRECTIVE]", cleaned)
+
+        return cleaned[:1000]  # Hard character ceiling to prevent buffer/token exhaustion
+
     async def process_message(self, message: str) -> ChatResponse:
         """
         Analyze user shopping query with Ollama via /api/chat and return structured response.
         """
+        safe_message = self._sanitize_input(message)
         messages = [
             {"role": "system", "content": SHOPPING_AGENT_SYSTEM_PROMPT},
-            {"role": "user", "content": f'Analyze this shopping request: "{message}"'}
+            {"role": "user", "content": f'Analyze this shopping request: "{safe_message}"'}
         ]
+
 
         try:
             raw_response = await self.client.chat(
