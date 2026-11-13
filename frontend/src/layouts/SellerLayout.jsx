@@ -3,6 +3,7 @@ import { Outlet, useLocation, useSearchParams } from 'react-router-dom';
 import { SellerHeader } from '@/components/seller/SellerHeader';
 import { SellerSidebar } from '@/components/seller/SellerSidebar';
 import { SellerFooter } from '@/components/seller/SellerFooter';
+import { SEOHead } from '@/components/common/SEOHead';
 import { useAuth } from '@/hooks/useAuth';
 import { getSellerStoreMe, getSellerProducts, getSellerOrders } from '@/services/sellerService';
 
@@ -59,6 +60,11 @@ export function SellerLayout({ children }) {
 
   return (
     <div className="min-h-screen bg-[#F8F9FA] text-[#17202F]">
+      <SEOHead
+        title={`Merchant Centre – ${store?.storeName || 'Dashboard'}`}
+        robots="noindex, nofollow"
+      />
+
       {/* 1. Dedicated Seller Header (Sticky at top) */}
       <SellerHeader
         store={store}

@@ -51,6 +51,9 @@ export async function loginWithEmail({ email, password, rememberMe = true }) {
       remember_me: Boolean(rememberMe),
     });
     const rawUser = data?.user ?? data;
+    if (data?.token && typeof window !== 'undefined') {
+      localStorage.setItem('zen_auth_token', data.token);
+    }
     return normalizeUser(rawUser, 'live');
   } catch (err) {
     throw normalizeApiError(err, 'Unable to sign in right now.');
@@ -94,6 +97,9 @@ export async function registerUser({
       preferred_currency: String(preferredCurrency || 'INR').toUpperCase(),
     });
     const rawUser = data?.user ?? data;
+    if (data?.token && typeof window !== 'undefined') {
+      localStorage.setItem('zen_auth_token', data.token);
+    }
     return normalizeUser(rawUser, 'live');
   } catch (err) {
     throw normalizeApiError(err, 'Unable to create your account right now.');

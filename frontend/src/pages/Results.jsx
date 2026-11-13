@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { ChevronRight, GitCompareArrows, Home as HomeIcon, RefreshCw, Sparkles, UserCheck, X } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { ProductGridSkeleton } from '@/components/common/Loader';
+import { SEOHead } from '@/components/common/SEOHead';
 import { ProductCard } from '@/components/products/ProductCard';
 import { ProductComparison } from '@/components/products/ProductComparison';
 import { ProductFilters } from '@/components/products/ProductFilters';
@@ -157,8 +158,31 @@ export function Results() {
     setDestinationCountry(code);
   };
 
+  const pageTitle = activeCategoryMeta
+    ? `${activeCategoryMeta.name} – International Products`
+    : filters.query
+    ? `Search "${filters.query}" – Global Products`
+    : 'Discover International Products & Verified Merchants';
+
+  const pageDesc = activeCategoryMeta
+    ? `Explore authentic ${activeCategoryMeta.name.toLowerCase()} from Japan, USA, Germany, and the UK. Live currency conversion and upfront landed costs.`
+    : filters.query
+    ? `Browse international offers for "${filters.query}" across global sellers with PayPal checkout and calculated customs.`
+    : 'Browse authentic international products across 15 curated departments from verified merchants worldwide. Upfront landed costs and PayPal checkout.';
+
   return (
     <div className="bg-[#F7F8FA] py-6 sm:py-10">
+      <SEOHead
+        title={pageTitle}
+        description={pageDesc}
+        canonical={
+          filters.category && filters.category !== 'ALL'
+            ? `/results?category=${encodeURIComponent(filters.category)}`
+            : '/results'
+        }
+        keywords="international products, cross-border shopping, buy from japan, buy from usa, buy from germany, paypal buyer protection"
+      />
+
       <div className="zen-container space-y-6">
         {/* Semantic Breadcrumb Navigation */}
         <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-[12px] text-[#697586]">

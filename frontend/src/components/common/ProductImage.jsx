@@ -8,6 +8,10 @@ export function ProductImage({
   className,
   imgClassName,
   fit = 'cover',
+  loading = 'lazy',
+  fetchPriority = 'auto',
+  width,
+  height,
 }) {
   const [hasError, setHasError] = useState(false);
 
@@ -38,7 +42,11 @@ export function ProductImage({
       <img
         src={src}
         alt={alt}
-        loading="eager"
+        loading={loading}
+        fetchPriority={fetchPriority}
+        decoding="async"
+        width={width}
+        height={height}
         onError={() => setHasError(true)}
         className={cn(
           'h-full w-full transition-transform duration-500 ease-out',

@@ -1,0 +1,43 @@
+# Zen Global — Robots Exclusion Protocol
+# https://zen.global/robots.txt
+
+User-agent: *
+
+# Allow public landing, discovery, and product catalog pages
+Allow: /$
+Allow: /results
+Allow: /product/
+Allow: /assistant
+Allow: /search
+Allow: /sell
+
+# Disallow private user accounts and dashboards
+Disallow: /account
+Disallow: /account/*
+
+# Disallow order completion and checkout flows
+Disallow: /checkout
+Disallow: /checkout/*
+Disallow: /order-success
+Disallow: /order-success/*
+
+# Disallow authentication pages to prevent indexing sensitive forms
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+
+# Disallow seller and merchant portal pages
+Disallow: /seller/
+Disallow: /seller/*
+
+# Disallow admin compliance dashboards
+Disallow: /admin
+Disallow: /admin/*
+
+# Disallow internal API endpoints and mock handlers
+Disallow: /api/
+Disallow: /api/*
+
+# XML Sitemap reference
+Sitemap: https://zen.global/sitemap.xml
+

@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { BookmarkCheck, Compass, Globe2 } from 'lucide-react';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { ZenLogo } from '@/components/common/ZenLogo';
+import { SEOHead } from '@/components/common/SEOHead';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/context/ToastContext';
 
@@ -37,6 +38,11 @@ export default function Register() {
 
   return (
     <section className="mx-auto max-w-[1160px] px-4 py-12 sm:px-6 lg:py-16">
+      <SEOHead
+        title="Create your Zen Account"
+        description="Join Zen Global for transparent cross-border ecommerce, real-time currency conversion, and secure PayPal checkout."
+        robots="noindex, nofollow"
+      />
       <div className="grid items-start gap-10 lg:grid-cols-12 lg:gap-12">
         <div className="space-y-6 lg:col-span-5 lg:pt-4">
           <Link to="/" aria-label="Zen Global Home" className="inline-flex items-center focus:outline-none">

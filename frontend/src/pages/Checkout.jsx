@@ -21,6 +21,7 @@ import { EmptyState } from '@/components/common/EmptyState';
 import { ErrorMessage } from '@/components/common/ErrorMessage';
 import { Button } from '@/components/common/Button';
 import { ZenLogo } from '@/components/common/ZenLogo';
+import { SEOHead } from '@/components/common/SEOHead';
 import { cn } from '@/utils/cn';
 
 function CheckoutStep({ number, label, done = false, active = false }) {
@@ -215,6 +216,11 @@ export function Checkout() {
 
   return (
     <div className="zen-container space-y-8 py-10">
+      <SEOHead
+        title="Secure Checkout & PayPal Capture"
+        robots="noindex, nofollow"
+      />
+
       {/* Editorial Header + Step Indicator */}
       <div className="flex flex-col gap-5 border-b border-[#E6E5E0] pb-6 lg:flex-row lg:items-end lg:justify-between">
         <div className="space-y-2">

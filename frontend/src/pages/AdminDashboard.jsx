@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/context/ToastContext';
+import { SEOHead } from '@/components/common/SEOHead';
 import {
   getAdminStats,
   getAdminSellers,
@@ -156,6 +157,11 @@ export function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-[#F7F8FA] pb-16">
+      <SEOHead
+        title="Admin Compliance & Risk Portal"
+        robots="noindex, nofollow"
+      />
+
       {/* Admin Top Header */}
       <div className="border-b border-[#E5E7EB] bg-white">
         <div className="zen-container py-6">

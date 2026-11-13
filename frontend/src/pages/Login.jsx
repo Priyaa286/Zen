@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Globe, ShieldCheck, Sparkles, Wallet } from 'lucide-react';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { ZenLogo } from '@/components/common/ZenLogo';
+import { SEOHead } from '@/components/common/SEOHead';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/context/ToastContext';
 
@@ -43,6 +44,11 @@ export default function Login() {
 
   return (
     <section className="mx-auto max-w-[1160px] px-4 py-12 sm:px-6 lg:py-16">
+      <SEOHead
+        title="Sign In to Zen"
+        description="Sign in to your Zen account to access your saved international items, personal delivery addresses, and orders."
+        robots="noindex, nofollow"
+      />
       <div className="grid items-start gap-10 lg:grid-cols-12 lg:gap-12">
         <div className="space-y-6 lg:col-span-5 lg:pt-4">
           <Link to="/" aria-label="Zen Global Home" className="inline-flex items-center focus:outline-none">

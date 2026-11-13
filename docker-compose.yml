@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: zen-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=production
+      - DEBUG=false
+      - SQLITE_DB_PATH=/app/data/zen.db
+      - SECRET_KEY=${SECRET_KEY:-zen_super_secret_jwt_production_signing_key_2026}
+      - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID:-sb-paypal-client-id}
+      - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET:-sb-paypal-client-secret}
+      - PAYPAL_ENVIRONMENT=${PAYPAL_ENVIRONMENT:-sandbox}
+      - OLLAMA_HOST=${OLLAMA_HOST:-http://host.docker.internal:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3.2}
+      - EXCHANGE_RATE_API_KEY=${EXCHANGE_RATE_API_KEY:-}
+      - CORS_ORIGINS=["http://localhost","http://localhost:80","http://localhost:5173","http://127.0.0.1:5173"]
+    volumes:
+      - zen_data:/app/data
+      - zen_uploads:/app/static/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/live"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: zen-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  zen_data:
+    driver: local
+  zen_uploads:
+    driver: local
+

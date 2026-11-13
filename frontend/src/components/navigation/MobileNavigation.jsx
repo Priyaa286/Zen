@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Bookmark,
@@ -38,6 +39,18 @@ export function MobileNavigation({
 }) {
   const prefersReduced = usePrefersReducedMotion();
   const categories = getAllCategories();
+
+  // Prevent background scrolling while mobile navigation drawer is open
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [open]);
 
   return (
     <AnimatePresence>

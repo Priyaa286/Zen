@@ -17,6 +17,7 @@ import {
 import { Button } from '@/components/common/Button';
 import { ProductImage } from '@/components/common/ProductImage';
 import { ZenLogo } from '@/components/common/ZenLogo';
+import { SEOHead } from '@/components/common/SEOHead';
 import { CategoryGrid } from '@/components/marketplace/CategoryGrid';
 import { ProductCard } from '@/components/products/ProductCard';
 import { ProductGridSkeleton } from '@/components/common/Loader';
@@ -157,6 +158,48 @@ const TRANSPARENCY_SAMPLE_IDS = [
   'prod-kbeauty-serum-kr',
 ];
 
+const HOME_JSON_LD = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'Zen Global',
+    alternateName: 'Zen PayPal Borderless Buying Agent',
+    url: 'https://zen.global',
+    description:
+      'Shop globally with Zen, your AI-powered borderless buying assistant. Compare international products, understand currency conversions and estimated landed costs, and checkout securely with PayPal.',
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: {
+        '@type': 'EntryPoint',
+        urlTemplate: 'https://zen.global/results?q={search_term_string}',
+      },
+      'query-input': 'required name=search_term_string',
+    },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'Zen Global',
+    url: 'https://zen.global',
+    logo: 'https://zen.global/assets/branding/zen_logo.svg',
+    sameAs: ['https://twitter.com/ZenGlobal'],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'SoftwareApplication',
+    name: 'Zen Shopping Agent',
+    applicationCategory: 'ShoppingApplication',
+    operatingSystem: 'All',
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+    },
+    description:
+      'AI shopping agent calculating landed costs, live FX conversions, and international air freight with secure PayPal checkout.',
+  },
+];
+
 export function Home() {
   const navigate = useNavigate();
   const { destinationCountry, preferredCurrency, useMockApi } = useAppContext();
@@ -233,11 +276,19 @@ export function Home() {
 
   return (
     <div className="bg-[#F7F8FA] text-[#17202F]">
+      <SEOHead
+        title="Zen – AI-Powered Borderless Shopping with PayPal"
+        description="Shop globally with Zen, your AI-powered borderless buying assistant. Compare international products, understand currency conversions and estimated landed costs, and checkout securely with PayPal."
+        keywords="borderless shopping, cross-border ecommerce, international shopping assistant, currency conversion, landed cost, paypal checkout, import duties, global marketplace"
+        canonical="/"
+        jsonLd={HOME_JSON_LD}
+      />
+
       {/* =========================================================================
           SECTION 1: HERO
           Balanced vertical height, clean typography, compact search prompt chips
           ========================================================================= */}
-      <section className="border-b border-[#E5E7EB] bg-white">
+      <section aria-labelledby="hero-heading" className="border-b border-[#E5E7EB] bg-white">
         <div className="zen-container grid grid-cols-1 items-center gap-10 py-10 sm:py-14 lg:grid-cols-12">
           <div className="space-y-6 lg:col-span-7">
             {/* Country / Currency Awareness Badge */}
@@ -267,9 +318,17 @@ export function Home() {
 
             {/* Main Headline */}
             <FadeIn delay={0.08} direction="up">
-              <h1 className="text-[34px] font-[750] leading-[1.08] tracking-[-0.03em] text-[#172554] sm:text-[48px] lg:text-[52px]">
-                A world of products. One place to shop.
-              </h1>
+              <div className="space-y-2">
+                <h1
+                  id="hero-heading"
+                  className="text-[32px] font-[750] leading-[1.1] tracking-[-0.03em] text-[#172554] sm:text-[44px] lg:text-[48px]"
+                >
+                  Zen – AI-Powered Borderless Shopping with PayPal
+                </h1>
+                <p className="text-[18px] sm:text-[20px] font-semibold text-[#17202F]">
+                  A world of products. One place to shop.
+                </p>
+              </div>
             </FadeIn>
 
             {/* Description */}
@@ -328,11 +387,11 @@ export function Home() {
 
           {/* Right Product Image Collage */}
           <FadeIn delay={0.16} direction="up" className="grid grid-cols-2 gap-3.5 lg:col-span-5">
-            {HERO_COLLAGE.map((card) => (
+            {HERO_COLLAGE.map((card, idx) => (
               <Link
                 key={card.id}
                 to={`/results?category=${encodeURIComponent(card.slug)}`}
-                className="group relative overflow-hidden rounded-xl border border-[#E5E7EB] bg-[#F1F3F6] shadow-sm transition-transform hover:-translate-y-0.5"
+                className="group relative overflow-hidden rounded-xl border border-[#E5E7EB] bg-[#F1F3F6] shadow-sm transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#465BE5]"
               >
                 <div className="aspect-[4/3] w-full">
                   <ProductImage
@@ -341,6 +400,10 @@ export function Home() {
                     className="h-full w-full"
                     imgClassName="group-hover:scale-[1.04] transition-transform duration-300"
                     fit="cover"
+                    loading={idx < 2 ? 'eager' : 'lazy'}
+                    fetchPriority={idx === 0 ? 'high' : 'auto'}
+                    width={320}
+                    height={240}
                   />
                 </div>
                 <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#17202F]/80 via-[#17202F]/35 to-transparent px-3 py-2">

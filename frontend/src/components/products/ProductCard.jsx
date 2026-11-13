@@ -189,7 +189,7 @@ export function ProductCard({ product }) {
             type="button"
             onClick={handleViewDetails}
             aria-label={`View details for ${product.title}`}
-            className="block aspect-[4/3] w-full text-left"
+            className="block aspect-[4/3] w-full text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#465BE5]"
           >
             <ProductImage
               src={product.imageUrl}
@@ -198,6 +198,9 @@ export function ProductCard({ product }) {
               className="h-full w-full"
               imgClassName="transition-transform duration-300 ease-out group-hover:scale-[1.03]"
               fit="cover"
+              loading="lazy"
+              width={400}
+              height={300}
             />
           </button>
 
@@ -266,13 +269,15 @@ export function ProductCard({ product }) {
             ) : null}
           </div>
 
-          <button
-            type="button"
-            onClick={handleViewDetails}
-            className="mt-2 block text-left text-[15px] font-[620] leading-snug tracking-[-0.015em] text-[#17202F] transition-colors group-hover:text-[#465BE5] line-clamp-2"
-          >
-            {product.shortTitle || product.title}
-          </button>
+          <h3 className="mt-2 text-[15px] font-[620] leading-snug tracking-[-0.015em] text-[#17202F]">
+            <button
+              type="button"
+              onClick={handleViewDetails}
+              className="block text-left transition-colors group-hover:text-[#465BE5] line-clamp-2 focus-visible:outline-none focus-visible:underline"
+            >
+              {product.shortTitle || product.title}
+            </button>
+          </h3>
 
           <p className="mt-1 text-[12px] text-[#697586]">
             {product.brand ? `${product.brand} · ` : ''}

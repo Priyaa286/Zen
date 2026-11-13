@@ -1,4 +1,5 @@
-import { RotateCcw, Search } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronDown, ChevronUp, RotateCcw, Search, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/common/Button';
 import { Input } from '@/components/ui/input';
 import {
@@ -32,22 +33,73 @@ export function ProductFilters({
 }) {
   const categories = getAllCategories();
 
-  const hasActiveFilters =
-    Boolean(filters.query) ||
-    (filters.category && filters.category !== 'ALL') ||
-    Boolean(filters.subcategory) ||
-    filters.originCountry !== 'ALL' ||
-    filters.availability !== 'ALL' ||
-    Boolean(filters.minBudget) ||
-    Boolean(filters.maxBudget) ||
-    filters.sortBy !== 'landed_asc';
+  const [mobileExpanded, setMobileExpanded] = useState(false);
+
+  const activeFiltersCount = [
+    Boolean(filters.query),
+    filters.category && filters.category !== 'ALL',
+    Boolean(filters.subcategory),
+    filters.originCountry && filters.originCountry !== 'ALL',
+    filters.availability && filters.availability !== 'ALL',
+    Boolean(filters.minBudget),
+    Boolean(filters.maxBudget),
+    filters.sortBy && filters.sortBy !== 'landed_asc',
+  ].filter(Boolean).length;
+
+  const hasActiveFilters = activeFiltersCount > 0;
 
   return (
     <section
       aria-label="Catalog filters"
-      className="rounded-lg border border-[#E5E7EB] bg-white p-4 sm:p-5"
+      className="rounded-lg border border-[#E5E7EB] bg-white p-3.5 sm:p-5 transition-all"
     >
-      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-12 lg:items-end">
+      {/* Mobile Disclosure Header (< lg) */}
+      <div className="flex items-center justify-between gap-3 lg:hidden pb-2.5 border-b border-[#E5E7EB]">
+        <div className="flex items-center gap-2 text-xs">
+          <span className="font-semibold text-[#17202F] tabular-nums">
+            {totalCount} offers
+          </span>
+          {hasActiveFilters && (
+            <span className="rounded-full bg-[#465BE5]/10 px-2 py-0.5 text-[10.5px] font-bold text-[#465BE5]">
+              {activeFiltersCount} active
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={onReset}
+              className="text-[11.5px] font-medium text-[#697586] hover:text-[#17202F] underline"
+            >
+              Reset
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setMobileExpanded((prev) => !prev)}
+            aria-expanded={mobileExpanded}
+            aria-controls="catalog-filter-controls"
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#E5E7EB] bg-[#F7F8FA] px-2.5 text-xs font-semibold text-[#17202F] active:bg-gray-100"
+          >
+            <SlidersHorizontal className="h-3.5 w-3.5 text-[#465BE5]" />
+            <span>{mobileExpanded ? 'Hide Filters' : 'Filter & Sort'}</span>
+            {mobileExpanded ? (
+              <ChevronUp className="h-3.5 w-3.5 text-[#697586]" />
+            ) : (
+              <ChevronDown className="h-3.5 w-3.5 text-[#697586]" />
+            )}
+          </button>
+        </div>
+      </div>
+
+      <div
+        id="catalog-filter-controls"
+        className={`${
+          mobileExpanded ? 'grid mt-3.5' : 'hidden lg:grid'
+        } grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-12 lg:items-end`}
+      >
         {/* Search query */}
         <div className="sm:col-span-2 lg:col-span-3">
           <label
@@ -214,7 +266,7 @@ export function ProductFilters({
         </div>
       </div>
 
-      <div className="mt-3.5 flex flex-wrap items-center justify-between gap-2 border-t border-[#E5E7EB] pt-3 text-[12px] text-[#697586]">
+      <div className={`${mobileExpanded ? 'flex' : 'hidden lg:flex'} mt-3.5 flex-wrap items-center justify-between gap-2 border-t border-[#E5E7EB] pt-3 text-[12px] text-[#697586]`}>
         <span className="tabular-nums">
           Showing <strong className="font-[600] text-[#17202F]">{totalCount}</strong> available offer
           {totalCount === 1 ? '' : 's'}

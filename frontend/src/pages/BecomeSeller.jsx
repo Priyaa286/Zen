@@ -10,6 +10,7 @@ import {
   Truck,
   Zap,
 } from 'lucide-react';
+import { SEOHead } from '@/components/common/SEOHead';
 import { useAuth } from '@/hooks/useAuth';
 
 export function BecomeSeller() {
@@ -34,6 +35,13 @@ export function BecomeSeller() {
 
   return (
     <div className="min-h-screen bg-[#F7F8FA]">
+      <SEOHead
+        title="Sell Internationally on Zen – Global Multi-Vendor Merchant Platform"
+        description="Expand your store to global shoppers with Zen. List in your native currency with flat 5% commission, automated customs, and protected PayPal escrow disbursements."
+        canonical="/sell"
+        keywords="sell internationally, cross-border merchant, ecommerce export, paypal seller escrow, global buyers"
+      />
+
       {/* Hero Section */}
       <section className="relative overflow-hidden border-b border-[#E5E7EB] bg-white py-16 lg:py-24">
         <div className="zen-container">

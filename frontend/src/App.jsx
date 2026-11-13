@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { CurrencyProvider } from '@/context/CurrencyContext';
@@ -17,27 +17,42 @@ import { RoleRoute } from '@/components/auth/RoleRoute';
 import { OnboardingModal } from '@/components/auth/OnboardingModal';
 import { PageTransition } from '@/components/motion/PageTransition';
 import Home from '@/pages/Home';
-import Assistant from '@/pages/Assistant';
-import Results from '@/pages/Results';
-import Product from '@/pages/Product';
-import Checkout from '@/pages/Checkout';
-import OrderSuccess from '@/pages/OrderSuccess';
-import Login from '@/pages/Login';
-import Register from '@/pages/Register';
-import ForgotPassword from '@/pages/ForgotPassword';
-import AccountSettings from '@/pages/AccountSettings';
-import BecomeSeller from '@/pages/BecomeSeller';
-import SellerRegistration from '@/pages/SellerRegistration';
-import SellerVerification from '@/pages/SellerVerification';
-import SellerDashboard from '@/pages/SellerDashboard';
-import SellerProfile from '@/pages/SellerProfile';
-import StoreSettings from '@/pages/StoreSettings';
-import SellerProducts from '@/pages/SellerProducts';
-import ProductForm from '@/pages/ProductForm';
-import SellerInventory from '@/pages/SellerInventory';
-import SellerCategories from '@/pages/SellerCategories';
-import AdminDashboard from '@/pages/AdminDashboard';
-import NotFound from '@/pages/NotFound';
+
+// Route-level code splitting for enhanced performance & reduced initial bundle
+const Assistant = lazy(() => import('@/pages/Assistant'));
+const Results = lazy(() => import('@/pages/Results'));
+const Product = lazy(() => import('@/pages/Product'));
+const Checkout = lazy(() => import('@/pages/Checkout'));
+const OrderSuccess = lazy(() => import('@/pages/OrderSuccess'));
+const Login = lazy(() => import('@/pages/Login'));
+const Register = lazy(() => import('@/pages/Register'));
+const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'));
+const AccountSettings = lazy(() => import('@/pages/AccountSettings'));
+const BecomeSeller = lazy(() => import('@/pages/BecomeSeller'));
+const SellerRegistration = lazy(() => import('@/pages/SellerRegistration'));
+const SellerVerification = lazy(() => import('@/pages/SellerVerification'));
+const SellerDashboard = lazy(() => import('@/pages/SellerDashboard'));
+const SellerProfile = lazy(() => import('@/pages/SellerProfile'));
+const StoreSettings = lazy(() => import('@/pages/StoreSettings'));
+const SellerProducts = lazy(() => import('@/pages/SellerProducts'));
+const ProductForm = lazy(() => import('@/pages/ProductForm'));
+const SellerInventory = lazy(() => import('@/pages/SellerInventory'));
+const SellerCategories = lazy(() => import('@/pages/SellerCategories'));
+const AdminDashboard = lazy(() => import('@/pages/AdminDashboard'));
+const NotFound = lazy(() => import('@/pages/NotFound'));
+
+function RouteFallback() {
+  return (
+    <div
+      className="flex min-h-[50vh] items-center justify-center p-8"
+      role="status"
+      aria-label="Loading page"
+    >
+      <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#172554] border-t-transparent" />
+      <span className="sr-only">Loading page...</span>
+    </div>
+  );
+}
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -52,7 +67,8 @@ function AnimatedRoutes() {
 
   return (
     <AnimatePresence mode="wait" initial={false}>
-      <Routes location={location} key={location.pathname}>
+      <Suspense fallback={<RouteFallback />}>
+        <Routes location={location} key={location.pathname}>
         <Route
           path="/"
           element={
@@ -429,8 +445,9 @@ function AnimatedRoutes() {
           }
         />
       </Routes>
-    </AnimatePresence>
-  );
+    </Suspense>
+  </AnimatePresence>
+);
 }
 
 function AppShell() {
@@ -442,8 +459,14 @@ function AppShell() {
   if (isSellerPortal) {
     return (
       <div className="flex min-h-screen flex-col bg-[#F8F9FA] text-[#17202F]">
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-[#172554] focus:px-4 focus:py-2 focus:text-xs focus:font-semibold focus:text-white focus:shadow-lg focus:outline-none"
+        >
+          Skip to main content
+        </a>
         <ScrollToTop />
-        <main className="flex-1">
+        <main id="main-content" className="flex-1" tabIndex={-1}>
           <AnimatedRoutes />
         </main>
       </div>
@@ -452,9 +475,15 @@ function AppShell() {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#F7F8FA] text-[#17202F]">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-[#172554] focus:px-4 focus:py-2 focus:text-xs focus:font-semibold focus:text-white focus:shadow-lg focus:outline-none"
+      >
+        Skip to main content
+      </a>
       <ScrollToTop />
       <Navbar />
-      <main className="flex-1">
+      <main id="main-content" className="flex-1" tabIndex={-1}>
         <AnimatedRoutes />
       </main>
       <CartDrawer />

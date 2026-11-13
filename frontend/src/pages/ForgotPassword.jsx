@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ZenLogo } from '@/components/common/ZenLogo';
+import { SEOHead } from '@/components/common/SEOHead';
 import { useAuth } from '@/hooks/useAuth';
 import { useAppContext } from '@/context/AppContext';
 import { validateEmail } from '@/utils/validators';
@@ -41,6 +42,10 @@ export default function ForgotPassword() {
 
   return (
     <section className="mx-auto max-w-lg px-4 py-14 sm:px-6 lg:py-20">
+      <SEOHead
+        title="Reset Password"
+        robots="noindex, nofollow"
+      />
       <div className="rounded-2xl border border-[#E6E5E0] bg-white p-6 shadow-card sm:p-8">
         <div className="mb-5 flex items-center justify-between gap-3 border-b border-[#E6E5E0] pb-4">
           <Link to="/" aria-label="Zen Global Home" className="inline-flex items-center focus:outline-none">

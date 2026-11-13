@@ -153,6 +153,16 @@ export const apiClient = axios.create({
   },
 });
 
+apiClient.interceptors.request.use((config) => {
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('zen_auth_token');
+    if (token && !config.headers.Authorization) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => Promise.reject(normalizeApiError(error))
@@ -161,3 +171,6 @@ apiClient.interceptors.response.use(
 export function simulateMockLatency(ms = 320) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
+export default apiClient;
+

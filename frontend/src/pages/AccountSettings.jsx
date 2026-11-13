@@ -23,6 +23,7 @@ import { OrderHistory } from '@/components/account/OrderHistory';
 import { useAuth } from '@/hooks/useAuth';
 import { useCurrency } from '@/hooks/useCurrency';
 import { useToast } from '@/context/ToastContext';
+import { SEOHead } from '@/components/common/SEOHead';
 
 const ACCOUNT_TABS = [
   { id: 'profile', label: 'Profile', icon: User },
@@ -77,6 +78,10 @@ export default function AccountSettings() {
 
   return (
     <section className="mx-auto max-w-[1160px] px-4 py-8 sm:px-6 lg:py-10">
+      <SEOHead
+        title="Account Settings & Preferences"
+        robots="noindex, nofollow"
+      />
       <div className="mb-6 flex flex-col justify-between gap-4 rounded-2xl border border-[#E6E5E0] bg-white p-6 shadow-subtle md:flex-row md:items-center">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2.5">

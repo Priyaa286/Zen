@@ -22,6 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { formatCurrency } from '@/utils/currencyFormatter';
+import { SEOHead } from '@/components/common/SEOHead';
 
 export function OrderSuccess() {
   const navigate = useNavigate();
@@ -122,6 +123,10 @@ export function OrderSuccess() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-4 py-12 sm:px-6 lg:px-8">
+      <SEOHead
+        title="Order Confirmation & Receipt"
+        robots="noindex, nofollow"
+      />
       {order.isMock && (
         <Alert variant="warning">
           <FlaskConical className="mt-0.5 h-4 w-4 shrink-0 text-[#C98A1C]" />

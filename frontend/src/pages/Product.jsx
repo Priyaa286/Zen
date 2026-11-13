@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, ChevronRight, Home as HomeIcon, Lock } from 'lucide-react';
 import { useProductDetail } from '@/hooks/useProducts';
@@ -13,6 +13,7 @@ import { CurrencyDetails } from '@/components/checkout/CurrencyDetails';
 import { Loader } from '@/components/common/Loader';
 import { ErrorMessage } from '@/components/common/ErrorMessage';
 import { Button } from '@/components/common/Button';
+import { SEOHead } from '@/components/common/SEOHead';
 
 export function Product() {
   const { id } = useParams();
@@ -75,6 +76,90 @@ export function Product() {
     navigate('/checkout');
   };
 
+  const productJsonLd = useMemo(() => {
+    if (!product) return null;
+    const originUrl = `https://zen.global/product/${product.id}`;
+    const imageUrl = product.imageUrl?.startsWith('http')
+      ? product.imageUrl
+      : `https://zen.global${product.imageUrl || '/assets/branding/zen-og-card.png'}`;
+
+    return [
+      {
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        name: product.title,
+        description:
+          product.description ||
+          `Authentic ${product.title} from verified merchant ${product.merchant?.name || 'Zen International'}. Transparent landed cost calculation and secure PayPal checkout.`,
+        image: imageUrl,
+        sku: product.id,
+        category: product.category,
+        brand: product.brand
+          ? {
+            '@type': 'Brand',
+            name: product.brand,
+          }
+          : undefined,
+        offers: {
+          '@type': 'Offer',
+          url: originUrl,
+          priceCurrency: product.originalCurrency || 'USD',
+          price: product.originalPrice,
+          availability:
+            product.availability === 'out_of_stock'
+              ? 'https://schema.org/OutOfStock'
+              : 'https://schema.org/InStock',
+          itemCondition: 'https://schema.org/NewCondition',
+          seller: {
+            '@type': 'Organization',
+            name: product.merchant?.name || 'Verified International Merchant',
+          },
+        },
+      },
+      {
+        '@context': 'https://schema.org',
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Home',
+            item: 'https://zen.global/',
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: 'Discover',
+            item: 'https://zen.global/results',
+          },
+          ...(product.category
+            ? [
+              {
+                '@type': 'ListItem',
+                position: 3,
+                name: product.category,
+                item: `https://zen.global/results?category=${encodeURIComponent(product.categorySlug || product.category)}`,
+              },
+              {
+                '@type': 'ListItem',
+                position: 4,
+                name: product.shortTitle || product.title,
+                item: originUrl,
+              },
+            ]
+            : [
+              {
+                '@type': 'ListItem',
+                position: 3,
+                name: product.shortTitle || product.title,
+                item: originUrl,
+              },
+            ]),
+        ],
+      },
+    ];
+  }, [product]);
+
   if (loading) {
     return (
       <Loader
@@ -104,6 +189,23 @@ export function Product() {
 
   return (
     <div className="zen-container space-y-8 py-8 sm:py-10">
+      <SEOHead
+        title={`${product.title} – Buy International`}
+        description={
+          product.description ||
+          `Shop ${product.title} from verified merchant ${product.merchant?.name || 'Zen Global'}. Real-time currency conversion, import duty calculation, and secure PayPal checkout.`
+        }
+        keywords={`${product.title}, ${product.category || ''}, buy ${product.brand || ''}, international shipping, landed cost, paypal`}
+        canonical={`/product/${product.id}`}
+        ogType="product"
+        ogImage={
+          product.imageUrl?.startsWith('http')
+            ? product.imageUrl
+            : `https://zen.global${product.imageUrl || '/assets/branding/zen-og-card.png'}`
+        }
+        jsonLd={productJsonLd}
+      />
+
       {/* Rich Breadcrumb Navigation */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#E5E7EB] pb-4">
         <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-[12.5px] text-[#697586]">
