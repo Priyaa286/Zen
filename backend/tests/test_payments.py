@@ -33,7 +33,7 @@ from app.schemas.pricing_schema import CostItem, LandedCostQuote
 from app.services.pricing_service import QUOTES_STORE
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def client():
     with TestClient(app) as test_client:
         yield test_client

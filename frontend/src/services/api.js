@@ -124,7 +124,7 @@ export function normalizeApiError(error, fallbackMessage = "We couldn't reach Ze
         'Please check the submitted request details and try again.';
     } else if (status >= 500) {
       friendlyMessage =
-        data?.message || 'The backend encountered an internal error. Please try again shortly.';
+        detailMessage || data?.message || 'The backend encountered an internal error. Please try again shortly.';
     } else if (detailMessage || typeof data?.message === 'string') {
       friendlyMessage = detailMessage || data.message;
     }

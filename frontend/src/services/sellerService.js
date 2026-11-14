@@ -39,8 +39,36 @@ export async function getSellerStoreMe(ownerEmail) {
   if (isMockModeActive()) {
     return getStoreByOwnerEmail(ownerEmail);
   }
-  const { data } = await apiClient.get('/sellers/me');
-  return data?.store || data;
+  try {
+    const { data } = await apiClient.get('/sellers/me');
+    return data?.store || data;
+  } catch (err) {
+    if (err?.status === 404 || err?.response?.status === 404) {
+      return null;
+    }
+    throw err;
+  }
+}
+
+export async function getSellerVerificationStatus() {
+  if (isMockModeActive()) {
+    return {
+      hasStore: true,
+      verificationStatus: 'PENDING_REVIEW',
+      isApproved: false,
+      documents: [],
+    };
+  }
+  const { data } = await apiClient.get('/sellers/verification/status');
+  return data;
+}
+
+export async function attachVerificationDocument(docPayload) {
+  if (isMockModeActive()) {
+    return { ok: true, document: docPayload };
+  }
+  const { data } = await apiClient.post('/sellers/verification/documents', docPayload);
+  return data;
 }
 
 export async function updateSellerStore(storeId, updates) {

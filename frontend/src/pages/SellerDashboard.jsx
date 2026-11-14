@@ -299,6 +299,25 @@ export function SellerDashboard({ defaultTab }) {
     );
   }
 
+  if (!loading && !store) {
+    return (
+      <div className="rounded-2xl border border-[#E5E7EB] bg-white p-8 text-center max-w-lg mx-auto my-12 shadow-subtle">
+        <Store className="h-12 w-12 text-[#172554] mx-auto mb-3" />
+        <h2 className="text-lg font-bold text-[#17202F]">Register Your Merchant Store</h2>
+        <p className="text-xs text-[#697586] mt-1 mb-5 leading-relaxed">
+          You have not completed merchant registration yet. Register your legal corporate entity, upload official verification documents, and configure payout settlement to start selling internationally.
+        </p>
+        <Link
+          to="/seller/register"
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#172554] px-6 text-sm font-semibold text-white hover:bg-[#1E3A8A] transition-colors"
+        >
+          <span>Begin Merchant Registration</span>
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+      </div>
+    );
+  }
+
   const newOrdersCount = orders.filter((o) => ['NEW', 'CONFIRMED'].includes(o.status)).length;
   const processingOrdersCount = orders.filter((o) => o.status === 'PROCESSING').length;
   const completedOrdersCount = orders.filter((o) => o.status === 'DELIVERED').length;

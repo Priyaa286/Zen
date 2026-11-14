@@ -71,24 +71,40 @@ async def get_admin_sellers(
     db: AsyncSession = Depends(get_db),
 ):
     """List merchant store applications for compliance verification."""
-    res = await db.execute(select(SellerStoreORM))
+    res = await db.execute(select(SellerStoreORM).order_by(SellerStoreORM.created_at.desc()))
     stores = res.scalars().all()
+    
+    def _parse_docs(s: SellerStoreORM):
+        if not s.verification_documents_json:
+            return []
+        try:
+            return json.loads(s.verification_documents_json)
+        except Exception:
+            return []
+
     return {"sellers": [
         {
             "id": s.id,
             "storeName": s.store_name,
+            "legalBusinessName": s.legal_business_name or s.store_name,
+            "registrationNumber": s.registration_number or s.business_registration,
             "country": s.country,
             "baseCurrency": s.base_currency,
             "dispatchLocation": s.dispatch_location,
+            "bankAccountMasked": s.bank_account_masked,
             "status": s.status,
+            "verificationStatus": s.status,
             "rating": s.rating,
             "isApproved": bool(s.is_approved),
+            "adminNotes": s.admin_notes,
+            "verificationDocuments": _parse_docs(s),
             "createdAt": s.created_at.isoformat() if s.created_at else None,
         }
         for s in stores
     ]}
 
 
+@router.post("/sellers/{seller_id}/review", status_code=status.HTTP_200_OK)
 @router.put("/sellers/{seller_id}/review", status_code=status.HTTP_200_OK)
 async def review_seller_endpoint(
     seller_id: str,
@@ -96,15 +112,37 @@ async def review_seller_endpoint(
     admin: UserORM = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """Approve, reject, or suspend a merchant store application with immutable audit logging."""
+    """Approve, reject, or request action on a merchant store application with immutable audit logging."""
     res = await db.execute(select(SellerStoreORM).where(SellerStoreORM.id == seller_id))
     store = res.scalar_one_or_none()
     if not store:
         raise HTTPException(status_code=404, detail="Store application not found.")
 
-    new_status = "APPROVED" if payload.action.upper() == "APPROVE" else "REJECTED"
+    action_norm = payload.action.upper().strip()
+    if action_norm in ("APPROVE", "APPROVED"):
+        new_status = "APPROVED"
+        store.is_approved = 1
+    elif action_norm in ("REJECT", "REJECTED"):
+        new_status = "REJECTED"
+        store.is_approved = 0
+    elif action_norm in ("ACTION_REQUIRED", "REQUIRE_ACTION"):
+        new_status = "ACTION_REQUIRED"
+        store.is_approved = 0
+    elif action_norm in ("UNDER_REVIEW", "REVIEW"):
+        new_status = "UNDER_REVIEW"
+        store.is_approved = 0
+    elif action_norm in ("SUSPEND", "SUSPENDED"):
+        new_status = "SUSPENDED"
+        store.is_approved = 0
+    else:
+        new_status = action_norm
+        store.is_approved = 0
+
     store.status = new_status
-    store.is_approved = 1 if new_status == "APPROVED" else 0
+    store.admin_notes = payload.notes or ""
+    store.reviewed_by = admin.email
+    store.reviewed_at = datetime.now(timezone.utc)
+    store.updated_at = datetime.now(timezone.utc)
 
     # Add audit log
     audit = AuditLogORM(
@@ -113,12 +151,24 @@ async def review_seller_endpoint(
         actor_email=admin.email,
         target_id=store.id,
         action=f"Store application status set to {new_status}. Note: {payload.notes or 'None'}",
-        details_json=json.dumps({"action": payload.action, "notes": payload.notes}),
+        details_json=json.dumps({
+            "action": payload.action,
+            "status": new_status,
+            "notes": payload.notes,
+            "admin": admin.email,
+        }),
     )
     db.add(audit)
     await db.commit()
 
-    return {"ok": True, "storeId": store.id, "status": store.status}
+    return {
+        "ok": True,
+        "storeId": store.id,
+        "status": store.status,
+        "verificationStatus": store.status,
+        "isApproved": bool(store.is_approved),
+        "adminNotes": store.admin_notes,
+    }
 
 
 @router.get("/products", status_code=status.HTTP_200_OK)
