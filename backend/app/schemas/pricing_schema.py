@@ -55,6 +55,8 @@ class LandedCostQuote(BaseModel):
     # Totals
     total_estimated_cost: Optional[float] = Field(default=None, description="Total estimated cost in destination currency (null if essential charges unknown)")
     total_is_exact: bool = Field(default=False, description="True ONLY if all components (shipping, duty, taxes) are verified")
+    paypal_settlement_currency: Optional[str] = Field(default="USD", description="Settlement currency for PayPal")
+    paypal_settlement_amount: Optional[float] = Field(default=None, description="Settlement amount for PayPal")
     
     # Timing & Validity
     created_at: datetime = Field(..., description="Quote generation timestamp")

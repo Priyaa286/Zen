@@ -99,29 +99,32 @@ class PaymentService:
             raise PaymentError(f"Quote '{req.quote_id}' is invalid or expired.", status_code=404, error_code="QUOTE_NOT_FOUND")
 
         # Determine safe transaction amount & currency for PayPal.
-        # Rule: Use the verified quote's original source currency for PayPal order creation
-        # (e.g. EUR for European storefront offers) because PayPal Orders API does not support INR
-        # for international merchant transactions (causes HTTP 422).
-        # We NEVER send INR to PayPal Orders API.
-        # Amounts and currencies are derived EXCLUSIVELY from the persisted, verified quote.
-        raw_currency = (quote.source_currency or "EUR").upper().strip()
-        if raw_currency == "INR":
-            # Safety safeguard: if source was somehow INR, fallback to EUR
-            paypal_currency = "EUR"
-        else:
-            paypal_currency = raw_currency
+        # Rule: Use the disclosed settlement currency (e.g. USD) when target currency is unsupported
+        # by PayPal (e.g. INR), matching the frontend PayPal JS SDK configuration.
+        # If quote specifies paypal_settlement_currency and paypal_settlement_amount, prioritize them.
+        settlement_curr = getattr(quote, "paypal_settlement_currency", None)
+        settlement_amt = getattr(quote, "paypal_settlement_amount", None)
 
-        # For the PayPal charge:
-        # If total_is_exact is True and was in source_currency, use total.
-        # Otherwise, the safe charge is the verified product price in the source currency.
-        if quote.total_is_exact and quote.total_estimated_cost is not None and quote.total_estimated_cost > 0 and quote.destination_currency.upper() == paypal_currency:
-            base_amount = quote.total_estimated_cost
-        elif quote.product_price_source > 0:
-            base_amount = quote.product_price_source
-        elif quote.product_price_converted > 0 and quote.exchange_rate > 0:
-            base_amount = quote.product_price_converted / quote.exchange_rate
+        if settlement_curr and settlement_amt is not None and settlement_amt > 0:
+            paypal_currency = settlement_curr.upper().strip()
+            if paypal_currency == "INR":
+                paypal_currency = "USD"
+            base_amount = settlement_amt
         else:
-            raise PaymentError("Unable to safely determine payable amount from verified quote.", status_code=422, error_code="INVALID_QUOTE_AMOUNT")
+            raw_currency = (quote.source_currency or "EUR").upper().strip()
+            if raw_currency == "INR":
+                paypal_currency = "EUR"
+            else:
+                paypal_currency = raw_currency
+
+            if quote.total_is_exact and quote.total_estimated_cost is not None and quote.total_estimated_cost > 0 and quote.destination_currency.upper() == paypal_currency:
+                base_amount = quote.total_estimated_cost
+            elif quote.product_price_source > 0:
+                base_amount = quote.product_price_source
+            elif quote.product_price_converted > 0 and quote.exchange_rate > 0:
+                base_amount = quote.product_price_converted / quote.exchange_rate
+            else:
+                raise PaymentError("Unable to safely determine payable amount from verified quote.", status_code=422, error_code="INVALID_QUOTE_AMOUNT")
 
         payable_amount = round_for_currency(base_amount, paypal_currency)
 

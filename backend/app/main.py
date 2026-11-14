@@ -1,14 +1,21 @@
+import os
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.v1.router import api_router
 from app.core.config import settings
 from app.core.logging import logger, setup_logging
+from app.core.middleware import (
+    RateLimitMiddleware,
+    RequestIDMiddleware,
+    SecurityHeadersMiddleware,
+)
 from app.schemas.error import ErrorDetail, ErrorResponse
 from app.schemas.health import HealthResponse
 
@@ -47,6 +54,15 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Configure Security Headers Middleware
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Configure Request ID & Performance Tracing Middleware
+app.add_middleware(RequestIDMiddleware)
+
+# Configure Rate Limiter Middleware on Sensitive Endpoints
+app.add_middleware(RateLimitMiddleware)
+
 # Configure CORS Middleware for frontend communication
 app.add_middleware(
     CORSMiddleware,
@@ -55,6 +71,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Mount static files directory for media asset delivery
+os.makedirs("static/uploads", exist_ok=True)
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 # --- Centralized Error Handling ---
@@ -124,6 +144,13 @@ async def generic_exception_handler(request: Request, exc: Exception) -> JSONRes
     tags=["Health"],
     description="Root-level health check endpoint for load balancers and orchestrators."
 )
+@app.get(
+    "/health/live",
+    response_model=HealthResponse,
+    summary="Liveness check (Root)",
+    tags=["Health"],
+    description="Root-level liveness probe for Kubernetes and Docker orchestrators."
+)
 async def root_health() -> HealthResponse:
     """
     Root-level health-check endpoint.
@@ -136,6 +163,22 @@ async def root_health() -> HealthResponse:
     )
 
 
-# Include API v1 router under the configured prefix (e.g. /api/v1)
+@app.get(
+    "/health/ready",
+    summary="Deep readiness probe (Root)",
+    tags=["Health"],
+    description="Root-level readiness probe testing database and external dependencies."
+)
+async def root_readiness(request: Request) -> JSONResponse:
+    from app.api.v1.endpoints.health import api_v1_readiness
+    from app.database.connection import AsyncSessionLocal
+    async with AsyncSessionLocal() as db:
+        res = await api_v1_readiness(db)
+        return JSONResponse(status_code=200, content=res)
+
+
+
+# Include API v1 router under both /api/v1 and /api for seamless frontend integration
 app.include_router(api_router, prefix=settings.API_V1_STR)
+app.include_router(api_router, prefix="/api")
 
