@@ -8,6 +8,13 @@
 import { apiClient, BACKEND_CAPABILITIES } from './api';
 
 export const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+export const ALLOWED_DOCUMENT_TYPES = [
+  'application/pdf',
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+];
 export const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 
 /**
@@ -18,10 +25,26 @@ export function validateUploadFile(file, { allowedTypes = ALLOWED_IMAGE_TYPES, m
     return { valid: false, error: 'No file selected.' };
   }
 
-  if (!allowedTypes.includes(file.type.toLowerCase())) {
+  const fileType = (file.type || '').toLowerCase();
+  const fileName = (file.name || '').toLowerCase();
+
+  // Explicitly reject dangerous SVG/HTML
+  if (fileType.includes('svg') || fileName.endsWith('.svg') || fileType.includes('html') || fileName.endsWith('.html')) {
     return {
       valid: false,
-      error: `Unsupported file format (${file.type || 'unknown'}). Please upload a JPG, JPEG, PNG, or WebP image.`,
+      error: 'SVG and HTML file formats are rejected due to embedded script risks. Please upload a PDF, PNG, or JPG.',
+    };
+  }
+
+  const isAllowed = allowedTypes.some((t) => t.toLowerCase() === fileType) ||
+    (allowedTypes.includes('application/pdf') && fileName.endsWith('.pdf')) ||
+    (allowedTypes.includes('image/png') && fileName.endsWith('.png')) ||
+    (allowedTypes.includes('image/jpeg') && (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg')));
+
+  if (!isAllowed) {
+    return {
+      valid: false,
+      error: `Unsupported file format (${file.type || 'unknown'}). Please upload a PDF, PNG, or JPG.`,
     };
   }
 
@@ -65,19 +88,18 @@ export function createLocalImagePreview(file) {
 }
 
 /**
- * Uploads an image asset.
- * When the backend upload endpoint is unavailable, simulates a realistic
- * async upload pipeline and provides the validated object URL with metadata.
+ * Uploads an image or document asset.
+ * Sends multipart/form-data to FastAPI /upload endpoint.
  */
-export async function uploadAsset(file, { folder = 'profiles', onProgress } = {}) {
-  const validation = validateUploadFile(file);
+export async function uploadAsset(file, { folder = 'profiles', allowedTypes = ALLOWED_IMAGE_TYPES, onProgress } = {}) {
+  const validation = validateUploadFile(file, { allowedTypes });
   if (!validation.valid) {
     throw new Error(validation.error);
   }
 
-  // Simulated progress callback if provided
+  // Simulated initial progress callback if provided
   if (typeof onProgress === 'function') {
-    onProgress(30);
+    onProgress(15);
   }
 
   // Attempt live upload to FastAPI backend if available
@@ -91,7 +113,7 @@ export async function uploadAsset(file, { folder = 'profiles', onProgress } = {}
       onUploadProgress: (progressEvent) => {
         if (typeof onProgress === 'function' && progressEvent.total) {
           const pct = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          onProgress(pct);
+          onProgress(Math.max(15, pct));
         }
       },
     });
@@ -101,8 +123,10 @@ export async function uploadAsset(file, { folder = 'profiles', onProgress } = {}
       return res.data;
     }
   } catch (err) {
-    // If backend endpoint is temporarily offline or returns error in offline mock mode, fall back to object URL
     console.warn('Backend upload fell back to local object URL:', err?.message);
+    if (err?.response?.data?.detail) {
+      throw new Error(err.response.data.detail);
+    }
   }
 
   if (typeof onProgress === 'function') {
@@ -116,9 +140,21 @@ export async function uploadAsset(file, { folder = 'profiles', onProgress } = {}
     url: objectUrl,
     fileName: file.name,
     fileSize: file.size,
-    mimeType: file.type,
+    mimeType: file.type || 'application/octet-stream',
     folder,
     uploadedAt: new Date().toISOString(),
   };
 }
+
+/**
+ * Dedicated document uploader for compliance and corporate verification files.
+ */
+export async function uploadDocument(file, { onProgress } = {}) {
+  return uploadAsset(file, {
+    folder: 'verification',
+    allowedTypes: ALLOWED_DOCUMENT_TYPES,
+    onProgress,
+  });
+}
+
 

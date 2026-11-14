@@ -16,9 +16,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.security import get_optional_user
 from app.database.connection import get_db
 from app.database.models import OrderORM, PaymentORM, ProductORM, QuoteORM, UserORM
+from app.integrations.paypal.client import PayPalAPIError, PayPalAuthError
 from app.schemas.checkout_schema import CaptureOrderRequest, CreateOrderRequest
 from app.services.currency_service import currency_service
-from app.services.payment_service import payment_service
+from app.services.payment_service import PaymentError, payment_service
 from app.services.pricing_service import QUOTES_STORE, LandedCostQuote, pricing_service
 
 logger = logging.getLogger("zen.api.checkout")
@@ -98,9 +99,19 @@ async def calculate_checkout_endpoint(
     taxes_total = round((product_total + duties_total) * product.tax_rate, 2)
     total_payable = round(product_total + shipping_total + duties_total + taxes_total, 2)
 
-    # PayPal settlement in supported international currency (e.g. USD or EUR)
-    settlement_currency = "USD"
-    settlement_amount = round(total_payable / (usd_rate or 1.0), 2)
+    # PayPal settlement in supported international currency
+    PAYPAL_SUPPORTED_CURRENCIES = {
+        "USD", "EUR", "GBP", "JPY", "CAD", "AUD", "SGD", "CHF", "HKD",
+        "SEK", "DKK", "PLN", "NOK", "CZK", "HUF", "ILS", "MXN", "BRL",
+        "MYR", "PHP", "TWD", "THB", "NZD", "CNY"
+    }
+    if target_curr in PAYPAL_SUPPORTED_CURRENCIES and target_curr != "INR":
+        settlement_currency = target_curr
+        settlement_amount = total_payable
+    else:
+        # Cross-border PayPal Orders API does not support INR; settle transparently in USD
+        settlement_currency = "USD"
+        settlement_amount = round(total_payable / (usd_rate or 1.0), 2)
 
     now = datetime.now(timezone.utc)
     expires_at = now + timedelta(minutes=15)
@@ -129,7 +140,7 @@ async def calculate_checkout_endpoint(
         destination_currency=target_curr,
         payable_amount=product_total,
         total_estimated_cost=total_payable,
-        total_is_exact=0,
+        total_is_exact=1,
         breakdown_json=json.dumps(breakdown_data),
         created_at=now,
         expires_at=expires_at,
@@ -152,7 +163,9 @@ async def calculate_checkout_endpoint(
         product_price_converted=product_total,
         breakdown=[],
         total_estimated_cost=total_payable,
-        total_is_exact=False,
+        total_is_exact=True,
+        paypal_settlement_currency=settlement_currency,
+        paypal_settlement_amount=settlement_amount,
         created_at=now,
         expires_at=expires_at,
     )
@@ -171,8 +184,19 @@ async def calculate_checkout_endpoint(
         "product_title": product.title,
         "merchantName": product.merchant_name,
         "merchant_name": product.merchant_name,
-        "merchantCountry": product.merchant_country,
+        "merchantCountry": product.merchant_country or "JP",
+        "merchant_country": product.merchant_country or "JP",
+        "originCountry": product.merchant_country or "JP",
+        "origin_country": product.merchant_country or "JP",
+        "destinationCountry": dest_country,
+        "destination_country": dest_country,
         "quantity": qty,
+        "originalCurrency": product.currency,
+        "original_currency": product.currency,
+        "originalUnitPrice": product.price,
+        "original_unit_price": product.price,
+        "originalSubtotal": round(product.price * qty, 2),
+        "original_subtotal": round(product.price * qty, 2),
         "targetCurrency": target_curr,
         "target_currency": target_curr,
         "exchangeRate": rate,
@@ -188,7 +212,7 @@ async def calculate_checkout_endpoint(
             "etaLabel": f"{eta_min}–{eta_max} business days",
         },
         "shippingAvailable": True,
-        "isExact": False,
+        "isExact": True,
         "expiresAt": expires_at.isoformat(),
         "source": "live",
     }
@@ -223,7 +247,7 @@ async def create_checkout_endpoint(
     quote_id = calc_res["quoteId"]
     internal_order_id = f"ord_{uuid.uuid4().hex[:12]}"
 
-    # Attempt official PayPal Orders API; fall back to sandbox order reference
+    # Attempt official PayPal Orders API
     paypal_order_id = None
     approval_url = None
     try:
@@ -236,10 +260,23 @@ async def create_checkout_endpoint(
         )
         paypal_order_id = pp_order.paypal_order_id
         approval_url = pp_order.approval_url
+    except PaymentError as exc:
+        logger.error("PaymentService order creation failed: %s (code=%s)", exc.message, exc.error_code)
+        if "not configured" in exc.message.lower() or exc.error_code in ("PAYPAL_AUTH_ERROR", "PAYPAL_CREATION_FAILED"):
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="PayPal Sandbox credentials are not configured. Set PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET in Zen/backend/.env, or switch to Sandbox simulation mode.",
+            )
+        raise HTTPException(
+            status_code=exc.status_code if exc.status_code >= 400 else status.HTTP_502_BAD_GATEWAY,
+            detail=f"PayPal order creation failed: {exc.message}",
+        )
     except Exception as exc:
-        logger.warning("PayPal live sandbox call returned %s; generating sandbox checkout reference", exc)
-        paypal_order_id = f"PAYPAL-SANDBOX-{uuid.uuid4().hex[:10].upper()}"
-        approval_url = f"https://www.sandbox.paypal.com/checkoutnow?token={paypal_order_id}"
+        logger.error("PayPal order creation exception: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"PayPal order creation failed: {str(exc)}",
+        )
 
     # Persist OrderORM in database
     now = datetime.now(timezone.utc)
@@ -303,16 +340,31 @@ async def capture_checkout_endpoint(
     if order.status == "PAID":
         return _format_order_response(order)
 
-    # Capture through PayPal or sandbox verification
-    capture_id = f"CAP-{uuid.uuid4().hex[:12].upper()}"
+    # Capture through PayPal Orders API
+    capture_id = None
     try:
         cap_resp = await payment_service.capture_order(
             CaptureOrderRequest(order_id=order.internal_order_id, idempotency_key=str(uuid.uuid4()))
         )
         if cap_resp and cap_resp.paypal_capture_id:
             capture_id = cap_resp.paypal_capture_id
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="PayPal payment capture response did not contain a valid capture ID.",
+            )
+    except PaymentError as exc:
+        logger.error("PayPal capture verification failed: %s (code=%s)", exc.message, exc.error_code)
+        raise HTTPException(
+            status_code=exc.status_code if exc.status_code >= 400 else status.HTTP_400_BAD_REQUEST,
+            detail=f"PayPal payment capture failed: {exc.message}",
+        )
     except Exception as exc:
-        logger.warning("PayPal capture response notice (%s); recording sandbox payment verification.", exc)
+        logger.error("PayPal capture request error: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Payment capture verification error: {str(exc)}",
+        )
 
     # Update Order status in database
     now = datetime.now(timezone.utc)

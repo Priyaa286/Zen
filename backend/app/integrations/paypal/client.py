@@ -19,10 +19,17 @@ class PayPalAuthError(PayPalError):
 
 class PayPalAPIError(PayPalError):
     """Raised when PayPal API returns an error response."""
-    def __init__(self, message: str, status_code: Optional[int] = None, error_code: Optional[str] = None):
+    def __init__(
+        self,
+        message: str,
+        status_code: Optional[int] = None,
+        error_code: Optional[str] = None,
+        debug_id: Optional[str] = None,
+    ):
         super().__init__(message)
         self.status_code = status_code
         self.error_code = error_code
+        self.debug_id = debug_id
 
 
 class PayPalClient:
@@ -123,14 +130,19 @@ class PayPalClient:
         url = f"{self.base_url}/v2/checkout/orders"
         headers = self._get_headers(token)
 
-        # PayPal expects formatted string for amounts (e.g. "100.00")
-        formatted_amount = f"{amount:.2f}"
+        # PayPal expects formatted string for amounts (e.g. "100.00" or integer for zero-decimal currencies)
+        curr_upper = currency.upper().strip()
+        zero_decimal_currencies = {"JPY", "HUF", "TWD", "KRW"}
+        if curr_upper in zero_decimal_currencies:
+            formatted_amount = f"{int(round(amount))}"
+        else:
+            formatted_amount = f"{amount:.2f}"
 
         purchase_unit: Dict[str, Any] = {
             "reference_id": reference_id,
             "description": description[:127],  # PayPal description limit
             "amount": {
-                "currency_code": currency.upper(),
+                "currency_code": curr_upper,
                 "value": formatted_amount,
             },
         }
@@ -152,8 +164,14 @@ class PayPalClient:
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.post(url, headers=headers, json=payload)
+                debug_id = response.headers.get("paypal-debug-id")
                 if response.status_code not in (200, 201):
-                    logger.error("PayPal Create Order failed (status %d): %s", response.status_code, response.text)
+                    logger.error(
+                        "PayPal Create Order failed (status %d, debug_id=%s): %s",
+                        response.status_code,
+                        debug_id,
+                        response.text,
+                    )
                     err_code = None
                     err_msg = f"PayPal create order error {response.status_code}"
                     try:
@@ -166,7 +184,7 @@ class PayPalClient:
                             err_msg = f"{err_code or 'PayPalError'}: {err_json.get('message')}"
                     except Exception:
                         err_msg = f"PayPal create order error {response.status_code}: {response.text[:200]}"
-                    raise PayPalAPIError(err_msg, status_code=response.status_code, error_code=err_code)
+                    raise PayPalAPIError(err_msg, status_code=response.status_code, error_code=err_code, debug_id=debug_id)
 
                 return response.json()
 
@@ -188,9 +206,27 @@ class PayPalClient:
         try:
             async with httpx.AsyncClient(timeout=self.timeout) as client:
                 response = await client.post(url, headers=headers, json={})
+                debug_id = response.headers.get("paypal-debug-id")
                 if response.status_code not in (200, 201):
-                    logger.error("PayPal Capture Order failed (status %d): %s", response.status_code, response.text)
-                    raise PayPalAPIError(f"PayPal capture order error {response.status_code}: {response.text}")
+                    logger.error(
+                        "PayPal Capture Order failed (status %d, debug_id=%s): %s",
+                        response.status_code,
+                        debug_id,
+                        response.text,
+                    )
+                    err_code = None
+                    err_msg = f"PayPal capture order error {response.status_code}"
+                    try:
+                        err_json = response.json()
+                        err_code = err_json.get("name")
+                        details = err_json.get("details", [])
+                        if details and isinstance(details, list) and isinstance(details[0], dict):
+                            err_msg = f"{err_code or 'PayPalError'}: {details[0].get('description') or details[0].get('issue') or err_json.get('message')}"
+                        elif err_json.get("message"):
+                            err_msg = f"{err_code or 'PayPalError'}: {err_json.get('message')}"
+                    except Exception:
+                        err_msg = f"PayPal capture order error {response.status_code}: {response.text[:200]}"
+                    raise PayPalAPIError(err_msg, status_code=response.status_code, error_code=err_code, debug_id=debug_id)
 
                 return response.json()
 

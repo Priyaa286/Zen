@@ -39,6 +39,8 @@ function LivePayPalSdkCheckout({
   const activeOrderIdRef = useRef(null);
   const submittingRef = useRef(false);
   const settlementCurrency = summary?.breakdown?.paypalSettlementCurrency || 'USD';
+  const settlementAmount = summary?.breakdown?.paypalSettlementAmount;
+  const isConverted = summary?.targetCurrency && summary.targetCurrency !== settlementCurrency;
 
   const isBusy =
     paymentStatus === 'creating_order' ||
@@ -55,6 +57,15 @@ function LivePayPalSdkCheckout({
       }}
     >
       <div className="space-y-3">
+        {isConverted && settlementAmount && (
+          <div className="rounded border border-[#E6E5E0] bg-[#F8F7F4] px-3.5 py-2.5 text-xs text-[#747987]">
+            <span className="font-semibold text-[#151923]">Settlement Currency:</span>{' '}
+            PayPal settles internationally in{' '}
+            <strong className="text-[#151923]">{settlementCurrency} (${settlementAmount.toFixed(2)})</strong>{' '}
+            based on the guaranteed landed cost exchange rate.
+          </div>
+        )}
+
         {isBusy && paymentStatus !== 'completed' && (
           <Alert variant="info">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
@@ -158,10 +169,17 @@ function LivePayPalSdkCheckout({
           onError={(err) => {
             submittingRef.current = false;
             onStatusChange('failed');
-            onError(
-              err?.message ||
-                'PayPal encountered an error initializing checkout. Verify your PayPal Sandbox client ID and backend connection.'
-            );
+            const errStr = String(err?.message || err || '');
+            if (errStr.includes('genericError') || errStr.includes('popup_close')) {
+              onError(
+                'PayPal checkout window closed or encountered a configuration mismatch. Ensure PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET match between backend and frontend .env files.'
+              );
+            } else {
+              onError(
+                errStr ||
+                  'PayPal encountered an error initializing checkout. Verify your PayPal Sandbox client ID and backend connection.'
+              );
+            }
           }}
         />
       </div>
@@ -301,7 +319,18 @@ export function PayPalButton({
 
       {/* Live FastAPI + PayPal JS SDK Mode */}
       {!useMockApi && (
-        <div className={isLocked ? 'pointer-events-none opacity-50' : ''}>
+        <div className={isLocked ? 'pointer-events-none opacity-50 space-y-3' : 'space-y-3'}>
+          {PAYPAL_CLIENT_ID === 'sb' && (
+            <div className="rounded border border-amber-200 bg-amber-50/60 p-3 text-xs text-amber-900">
+              <div className="font-semibold flex items-center gap-1.5 text-amber-900">
+                <AlertCircle className="h-3.5 w-3.5 text-amber-600 shrink-0" />
+                PayPal Sandbox Configuration Notice
+              </div>
+              <p className="mt-1 text-amber-800 leading-relaxed">
+                Frontend is using the Sandbox placeholder client ID (<code className="font-mono bg-white/80 px-1 py-0.5 rounded border border-amber-200 text-amber-950">sb</code>). Set your real PayPal Sandbox app credentials in <code className="font-mono bg-white/80 px-1 py-0.5 rounded border border-amber-200 text-amber-950">Zen/backend/.env</code> and <code className="font-mono bg-white/80 px-1 py-0.5 rounded border border-amber-200 text-amber-950">Zen/frontend/.env</code> to authenticate live orders.
+              </p>
+            </div>
+          )}
           <LivePayPalSdkCheckout
             summary={summary}
             product={product}

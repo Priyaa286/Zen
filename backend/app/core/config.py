@@ -58,6 +58,10 @@ class Settings(BaseSettings):
     MONGODB_URL: str = "mongodb://localhost:27017/zen_db"
     SQLITE_DB_PATH: str = "zen_local.db"
 
+    # Security & Encryption
+    SECRET_KEY: str = "zen_secret_hmac_jwt_borderless_shopping_2026"
+    BANK_ENCRYPTION_KEY: str = ""
+
     @field_validator("CORS_ORIGINS", mode="before")
     @classmethod
     def assemble_cors_origins(cls, v: Union[str, List[str]]) -> List[str]:
